@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Task;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,78 +16,39 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Make task class
-class Task
-{
-    public function __construct(
-        public int $id,
-        public string $title,
-        public string $description,
-        public bool $completed,
-        public string $createdAt,
-        public string $updatedAt,
-    ) {
-
-    }
-}
-
-// Generate some task
-$tasks = [
-    new Task(
-        1,
-        'First Task',
-        'This is a first task',
-        false,
-        '2023-09-10 10:00:00',
-        '2023-09-10 10:00:00'
-    ),
-    new Task(
-        2,
-        'Second Task',
-        'This is a second task',
-        false,
-        '2023-09-10 10:00:00',
-        '2023-09-10 10:00:00'
-    ),
-    new Task(
-        3,
-        'Third Task',
-        'This is a third task',
-        false,
-        '2023-09-10 10:00:00',
-        '2023-09-10 10:00:00'
-    ),
-    new Task(
-        4,
-        'Fourth Task',
-        'This is a fourth task',
-        false,
-        '2023-09-10 10:00:00',
-        '2023-09-10 10:00:00'
-    ),
-];
-
 // Redirect if someone access the root endpoint
 Route::get('/', function () {
     return redirect()->route('tasks.index');
 });
 
-Route::get('/tasks', function () use ($tasks) {
+Route::get('/tasks', function () {
     return view('index', [
-        'tasks' => $tasks,
+        'tasks' => Task::latest()->get()
     ]);
 })->name('tasks.index');
 
-Route::get('/tasks/{id}', function ($id) use ($tasks) {
-    $task = collect($tasks)->firstWhere('id', $id);
+Route::view('/tasks/create', 'create')
+    ->name('tasks.create');
 
-    if (!$task) {
-        abort(Response::HTTP_NOT_FOUND);
-    }
-
-    return view('show', ['task' => $task]);
+Route::get('/tasks/{id}', function ($id) {
+    return view('show', ['task' => Task::findOrFail($id)]);
 })->name('tasks.show');
+
+Route::post('/tasks', function (Request $request) {
+    $data = $request->validate([
+        'title' => 'required|max:255',
+        'description' => 'required'
+    ]);
+
+    $task = new Task;
+    $task->title = $data['title'];
+    $task->description = $data['description'];
+    $task->save();
+
+    return redirect()->route('tasks.show', ['id' => $task->id])
+        ->with('success', 'Task created successfully');
+})->name('tasks.store');
 
 Route::fallback(function () {
     return 'Where are you going to?';
-});
+})->name('tasks.fallback');
