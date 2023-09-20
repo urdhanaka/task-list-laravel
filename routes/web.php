@@ -33,11 +33,17 @@ Route::view('/tasks/create', 'create')
 
 Route::get('/tasks/{task}/edit', function (Task $task) {
     return view('edit', ['task' => $task]);
-})->name('tasks.show');
+})->name('tasks.edit');
 
 Route::get('/tasks/{task}', function (Task $task) {
     return view('show', ['task' => $task]);
 })->name('tasks.show');
+
+Route::put('tasks/{task}/toggle-complete', function (Task $task) {
+    $task->toggleCompleted();
+
+    return redirect()->back()->with('success', 'Task updated succesfully');
+})->name('tasks.toggle-complete');
 
 Route::post('/tasks', function (TaskRequest $request) {
     $task = Task::create($request->validated());
